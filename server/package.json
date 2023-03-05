@@ -14,6 +14,7 @@
   "dependencies": {
     "@commonify/lowdb": "^3.0.0",
     "@koa/cors": "^3.3.0",
+    "ethers": "^5.7.2",
     "http-status": "^1.5.2",
     "joi": "^17.6.0",
     "koa": "^2.13.4",
@@ -25,10 +26,7 @@
     "koa-static": "^5.0.0",
     "koa-views": "^8.0.0",
     "lodash": "^4.17.21",
-    "moment": "^2.29.4",
-    "nodemon": "^2.0.19",
-    "rum-sdk-nodejs": "^1.0.0",
-    "socket.io": "^4.5.1"
+    "nodemon": "^2.0.19"
   },
   "nodemonConfig": {
     "ignore": [

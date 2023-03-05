@@ -1,2 +1,1 @@
-export * from './post';
-export * from './config';
+export * from './contract';

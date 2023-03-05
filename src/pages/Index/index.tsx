@@ -1,301 +1,211 @@
 import React from 'react';
 import { observer, useLocalObservable } from 'mobx-react-lite';
-import Welcome from './Welcome';
-import { TextField, Tooltip } from '@material-ui/core';
-import { HiOutlineMenu, HiX } from 'react-icons/hi';
 import Button from 'components/Button';
-import { IGroup, utils } from 'rum-sdk-browser';
+import { BiCopy } from 'react-icons/bi';
+import { MdOpenInNew } from 'react-icons/md';
+import MiddleTruncate from 'components/MiddleTruncate';
+import copy from 'copy-to-clipboard';
 import { useStore } from 'store';
+import { ethers } from 'ethers';
+import { ContractApi } from 'apis';
+import { IContract, INFT } from 'apis/types';
+import Loading from 'components/Loading';
 import sleep from 'utils/sleep';
-import { RiCheckDoubleFill, RiCheckLine } from 'react-icons/ri';
-import classNames from 'classnames';
-import KeystoreModal from './KeystoreModal';
-import TrxModal from './TrxModal';
-import multiavatar from '@multiavatar/multiavatar'
-import { ConfigApi, TrxApi, PostApi } from 'apis';
-import { IPost } from 'apis/types';
-import { TrxStorage } from 'apis/common';
-import store from 'store2';
-import { initSocket, getSocket } from 'utils/socket';
-import { v4 as uuidv4 } from 'uuid'
 
 export default observer(() => {
-  const { snackbarStore, confirmDialogStore } = useStore();
+  const { snackbarStore } = useStore();
   const state = useLocalObservable(() => ({
-    started: !!store('privateKey'),
-    inputValue: '',
-    ids: [] as string[],
-    map: {} as Record<string, IPost>,
-    showMenu: false,
-    privateKey: '',
-    address: '',
-    configReady: false,
-    keyReady: false,
-    postReady: false,
-    openKeystoreModal: false,
-    switchingAccount: false,
-    openTrxModal: false,
-    trxId: '',
-    sending: false,
-    pending: true,
-    group: {} as IGroup,
-    get isReady() {
-      return state.keyReady && state.postReady && state.configReady
-    }
+    contracts: [] as IContract[],
+    fetched: false,
   }));
-  const listContainerRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     (async () => {
       try {
-        const config = await ConfigApi.get();
-        store('seedUrl', config.seedUrl);
-        state.group = utils.seedUrlToGroup(config.seedUrl);
-        state.configReady = true;
-      } catch (_) {}
-    })();
-  }, [])
-
-  React.useEffect(() => {
-    (async () => {
-      if (state.isReady) {
-        await sleep(200);
-        state.pending = false;
+        state.contracts = await ContractApi.list();
+      } catch (err) {
+        console.log(err);
       }
+      state.fetched = true;
     })();
-  }, [state.isReady])
-
-  React.useEffect(() => {
-    if (!state.started || !state.group) {
-      return;
-    }
-    (async () => {
-      state.privateKey = store('privateKey') as string;
-      state.address = store('address') as string;
-      state.keyReady = true;
-    })();
-
-  }, [state.started]);
-
-  React.useEffect(() => {
-    if (!state.started || !state.group) {
-      return;
-    }
-
-    list();
-  }, [state.started]);
-
-  React.useEffect(() => {
-    const listener = async (post: IPost) => {
-      console.log('received a post');
-      console.log({ post });
-      if (state.map[post.id]) {
-        state.map[post.id].storage = TrxStorage.chain;
-      } else {
-        state.ids.push(post.id);
-        state.map[post.id] = post;
-      }
-    }
-    initSocket();
-    getSocket().on('post', listener);
-    return () => {
-      getSocket().off('post', listener);
-    }
   }, []);
 
-  const goToBottom = () => {
-    if (listContainerRef.current && listContainerRef.current?.lastChild) {
-      (listContainerRef.current?.lastChild as any).scrollIntoView()
-    }
-  }
-
-  const list = async () => {
-    try {
-      const posts = await PostApi.list();
-      for (const post of posts) {
-        if (!state.map[post.id]) {
-          state.ids.push(post.id);
-          state.map[post.id] = post;
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const localAddress = localStorage.getItem('metaMaskAddress');
+        if (localAddress) {
+          const provider = new ethers.providers.Web3Provider((window as any).ethereum);
+          const accounts = await provider.send("eth_requestAccounts", []);
+          const address = accounts[0];
+          if (address !== localAddress) {
+            localStorage.setItem('metaMaskAddress', address);
+            window.location.reload();
+          }
         }
+      } catch (err) {
+        console.log(err);
       }
-      await sleep(1);
-      goToBottom();
-      state.postReady = true;
-    } catch (err) {
-      console.log(err);
-    }
-  }
+    })();
+  }, []);
 
-  const send = async (value: string) => {
-    if (state.sending) {
-      return;
-    }
-    state.sending = true;
-    try {
-      const postId = uuidv4()
-      const res = await TrxApi.createActivity({
-        type: 'Create',
-        object: {
-          id: postId,
-          type: 'Note',
-          content: value,
-        }
-      });
-      console.log({ res });
-      state.ids.push(postId);
-      state.map[postId] = {
-        content: value,
-        userAddress: store('address'),
-        trxId: res.trx_id,
-        id: postId,
-        storage: TrxStorage.cache,
-        timestamp: Date.now(),
-      };
-      setTimeout(goToBottom, 1);
-    } catch (err) {
-      console.log(err);
-      snackbarStore.show({
-        message: '发送失败',
-        type: 'error'
-      })
-    }
-    state.sending = false;
-  }
-
-  if (!state.started) {
+  if (!state.fetched) {
     return (
-      <Welcome start={() => {
-        state.started = true;
-      }} />
+      <div className="pt-[30vh] flex justify-center">
+        <Loading size={32} />
+      </div>
     )
   }
 
+  return (
+    <div className="text-[28px] w-[1000px] mx-auto pt-10 text-white/80">
+      <div className="text-[46px] font-extrabold text-orange-400 text-center leading-tight">
+        Get NFT on Rum for testing
+      </div>
+      {state.contracts.map(contract => (
+        <div className="w-[760px] mx-auto mt-10" key={contract.contractAddress}>
+          <div className="border border-white/40 rounded-12 bg-gray-88/10">
+            <div className="flex items-center justify-between text-white/80 px-6 py-3">
+              <div className="text-[28px] font-bold">{contract.contractName}</div>
+              <div className="text-12 flex items-end flex-col">
+                <div className="flex items-center cursor-pointer" onClick={() => {
+                  copy(contract.contractAddress);
+                  snackbarStore.show({
+                    message: 'Copied',
+                  });
+                }}>
+                  <span className="mr-1 font-bold">Contract</span>
+                  <div className="opacity-70">
+                    <MiddleTruncate string={contract.contractAddress} length={10} />
+                  </div>
+                  <BiCopy className="text-14 ml-1 text-orange-400" /></div>
+                <div className="flex items-center mt-1 cursor-pointer" onClick={() => {
+                  window.open(window.origin);
+                }}>
+                  <span className="mr-1 font-bold">Club</span>
+                  <div className="opacity-70">
+                    <a href={`https://circle.rumsystem.net/groups/rum.${contract.contractAddress}`} target="_blank" rel="noreferrer">
+                      <MiddleTruncate string={`https://circle.rumsystem.net/groups/rum.${contract.contractAddress}`} length={15} />
+                    </a>
+                  </div>
+                  <MdOpenInNew className="text-14 ml-1 text-orange-400" />
+                </div>
+              </div>
+            </div>
+            <div className="p-5 border-t border-white/40">
+              <NFTs contractAddress={contract.contractAddress} />
+            </div>
+          </div>
+        </div>
+      ))}
+      <div className="pb-20" />
+    </div>
+  )
+});
+
+interface INFTsProps {
+  contractAddress: string
+}
+
+const NFTs = observer((props: INFTsProps) => {
+  const { snackbarStore, confirmDialogStore } = useStore();
+  const state = useLocalObservable(() => ({
+    address: localStorage.getItem('metaMaskAddress') || '',
+    nfts: [] as INFT[],
+    fetched: false,
+    minting: false
+  }));
+
+  React.useEffect(() => {
+    (async () => {
+      if (state.address) {
+        try {
+          state.nfts = await ContractApi.listNFTs(props.contractAddress, state.address);
+        } catch (err) {
+          console.log(err);
+        }
+      }
+      state.fetched = true;
+    })();
+  }, []);
+
+  const mint = async (contractAddress: string) => {
+    if (state.minting) {
+      return;
+    }
+    if (!(window as any).ethereum) {
+      confirmDialogStore.show({
+        content: 'Please install MetaMask first',
+        cancelText: 'Got it',
+        okText: 'Install',
+        ok: () => {
+          confirmDialogStore.okText = 'Redirecting';
+          confirmDialogStore.setLoading(true);
+          window.location.href = 'https://metamask.io';
+        },
+      });
+      return;
+    }
+    if (state.nfts.length >= 3) {
+      snackbarStore.show({
+        message: 'Each account can get 3 NFTs at most',
+        type: 'error',
+        duration: 3000
+      });
+      return;
+    }
+    state.minting = true;
+    try {
+      const provider = new ethers.providers.Web3Provider((window as any).ethereum);
+      const accounts = await provider.send("eth_requestAccounts", []);
+      const address = accounts[0];
+      localStorage.setItem('metaMaskAddress', address);
+      console.log(`[address]:`, accounts[0]);
+      await ContractApi.mint(contractAddress, address);
+      snackbarStore.show({
+        message: 'Done',
+      });
+      await sleep(1000);
+      window.location.reload();
+    } catch (err) {
+      console.log(err);
+      snackbarStore.show({
+        message: 'Something wrong',
+        type: 'error',
+      });
+    }
+    state.minting = false;
+  }
+
+  if (!state.fetched) {
+    return (
+      <div className="py-8 flex justify-center">
+        <Loading size={24} />
+      </div>
+    )
+  }
 
   return (
-    <div className="box-border mt-5 w-[600px] mx-auto">
-      <div className="bg-gray-f2 rounded-12">
-        <div className="py-4 px-8 text-gray-88 text-18 border-b border-gray-d8" onClick={goToBottom}>
-          {state.group!.groupName}
-        </div>
-        <div className="h-[76vh] overflow-auto px-8 pt-5 pb-2" ref={listContainerRef}>
-          {state.ids.map((id) => {
-            const post = state.map[id];
-            const fromMyself = post.userAddress === state.address;
-            const isSyncing = post.storage === TrxStorage.cache;
-            return (
-              <div className={classNames({
-                'flex-row-reverse': fromMyself
-              }, "mb-3 py-1 flex items-center w-full")} key={id}>
-                <div className="w-[42px] h-[42px] bg-white rounded-full" dangerouslySetInnerHTML={{
-                  __html: multiavatar(post.userAddress)
-                }} />
-                <Tooltip
-                  placement={fromMyself ? 'left' : 'right'}
-                  title="点击查看 Trx"
-                  disableHoverListener={isSyncing}
-                  arrow
-                  onClick={() => {
-                    if (isSyncing) {
-                      return;
-                    }
-                    state.trxId = post.trxId;
-                    state.openTrxModal = true;
-                  }}
-                >
-                  <div className={classNames({
-                    'bg-[#95EC69]': fromMyself,
-                    'bg-white': !fromMyself
-                  }, "max-w-[360px] text-slate-800 px-3 py-[10px] rounded-5 text-16 mx-3 relative cursor-pointer")}>
-                    {post.content}
-                    {fromMyself && (
-                      <div className={classNames({
-                        "bottom-[4px] left-[-28px]": fromMyself,
-                        "bottom-[4px] right-[-28px]": !fromMyself,
-                      }, "text-18 absolute")}>
-                        {isSyncing ? <RiCheckLine className="opacity-30" /> : (
-                          <div>
-                            <RiCheckDoubleFill className="text-[#39D101] cursor-pointer opacity-70" />
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </Tooltip>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-      <div className="mt-5 relative flex items-center">
-        <div className="w-[42px] h-[42px] rounded-full mr-3" dangerouslySetInnerHTML={{
-          __html: multiavatar(state.address)
-        }} />
-        <TextField
-          placeholder='说点什么...'
-          value={state.inputValue}
-          onChange={(e) => { state.inputValue = e.target.value; }}
-          variant="outlined"
-          fullWidth
-          autoFocus
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && state.inputValue) {
-              send(state.inputValue.trim());
-              state.inputValue = '';
-            }
-          }}
-        />
-        <div className="absolute right-[-80px] top-0 text-20 text-gray-400 h-10 w-10 flex items-center justify-center border border-gray-400 rounded-full cursor-pointer" onClick={() => {
-          state.showMenu = !state.showMenu;
-        }}>
-          {!state.showMenu && <HiOutlineMenu />}
-          {state.showMenu && <HiX />}
-        </div>
-        {state.showMenu && (
-          <div className="absolute right-[-170px] top-[-150px] text-20 text-gray-400 animate-fade-in">
-            <Button color="gray" outline onClick={() => {
-              state.switchingAccount = false;
-              state.openKeystoreModal = true;
-            }}>我的帐号信息</Button>
-            <div />
-            <Button color="gray" outline className="mt-4" onClick={() => {
-              state.switchingAccount = true;
-              state.openKeystoreModal = true;
-            }}>使用其他账号</Button>
-            <div />
-            <Button color="gray" outline className="mt-4" onClick={() => {
-              confirmDialogStore.show({
-                content: '确定退出帐号吗？',
-                ok: async () => {
-                  confirmDialogStore.hide();
-                  await sleep(400); 
-                  store.clear();
-                  window.location.reload();
-                },
-              });
-            }}>退出</Button>
-          </div>
-        )}
-        <KeystoreModal
-          switchingAccount={state.switchingAccount}
-          open={state.openKeystoreModal}
-          onClose={() => {
-          state.openKeystoreModal = false;
-        }} />
-        <TrxModal
-          groupId={state.group!.groupId}
-          trxId={state.trxId}
-          open={state.openTrxModal}
-          onClose={() => {
-          state.openTrxModal = false;
-        }} />
-      </div>
-      {state.pending && (
-        <div className="fixed inset-0 bg-white flex items-center justify-center text-gray-88 text-18">
-          <div className="-mt-20 tracking-wider">
-            加载中...
+    <div>
+      {state.nfts.length > 0 && (
+        <div>
+          <div className="font-bold text-20 opacity-70 text-center">My NFTs 👇👇👇</div>
+          <div className="flex flex-wrap px-5 justify-center py-4">
+            {state.nfts.map(nft => (
+              <img src={nft.image} alt={`${nft.tokenId}`} className="w-[200px] mx-2 rounded-12" />
+            ))}
           </div>
         </div>
       )}
+      <div className={`flex justify-center ${state.nfts.length === 0 ? 'py-8' : 'py-3'}`}>
+        <Button
+          size="small"
+          onClick={() => mint(props.contractAddress)}
+          isDoing={state.minting}
+        >
+          <span className="font-bold px-2 tracking-wider text-16">Git me an NFT</span>
+        </Button>
+      </div>
     </div>
   )
 });

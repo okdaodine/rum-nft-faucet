@@ -9,7 +9,7 @@ interface Props {
   onClick?: () => unknown;
   fullWidth?: boolean;
   size?: 'large' | 'normal' | 'small' | 'mini';
-  color?: 'primary' | 'gray' | 'red' | 'green' | 'white';
+  color?: 'primary' | 'gray' | 'red' | 'orange' | 'white';
   disabled?: boolean;
   children?: React.ReactNode;
   outline?: boolean;
@@ -39,14 +39,16 @@ export default (props: Props) => {
         {
           'w-full': fullWidth,
           [size]: size,
-          'bg-blue-400 text-white': !outline && color === 'primary',
-          'bg-gray-bd text-white': !outline && color === 'gray',
-          'bg-green-500 text-white': !outline && color === 'green',
-          'border-blue-400 text-blue-400 border outline': outline && color === 'primary',
-          'border-red-400 text-red-400 border outline': outline && color === 'red',
-          'border-green-500 text-green-500 border outline': outline && color === 'green',
+          'bg-black text-white dark:bg-white dark:text-black': !outline && color === 'primary',
+          'bg-white text-black': !outline && color === 'white',
+          'bg-gray-bd text-white dark:bg-[#333] dark:opacity-60': !outline && color === 'gray',
+          'bg-orange-400 text-black': !outline && color === 'orange',
+          'bg-red-500 text-white': !outline && color === 'red',
+          'border-black text-black dark:border-white dark:text-white dark:text-opacity-80 border outline': outline && color === 'primary',
+          'border-red-500 text-red-500 border outline': outline && color === 'red',
+          'border-orange-400 text-orange-400 border outline': outline && color === 'orange',
           'border-white text-white border outline': outline && color === 'white',
-          'border-gray-af text-gray-88 border outline': outline && color === 'gray',
+          'border-gray-af text-gray-af border outline': outline && color === 'gray',
         },
         'rounded-full outline-none leading-none',
       )}
@@ -60,7 +62,7 @@ export default (props: Props) => {
         <ButtonProgress
           isDoing={isDoing}
           isDone={isDone}
-          color={outline ? 'text-blue-400' : 'text-white'}
+          color='inherit'
         />
       </div>
     </button>

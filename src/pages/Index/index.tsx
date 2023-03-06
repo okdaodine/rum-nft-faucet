@@ -60,7 +60,7 @@ export default observer(() => {
   return (
     <div className="text-[28px] w-[1000px] mx-auto pt-10 text-white/80">
       <div className="text-[46px] font-extrabold text-orange-400 text-center leading-tight">
-        Get NFT on Rum for testing
+        Get NFT on Rum chain
       </div>
       {state.contracts.map(contract => (
         <div className="w-[760px] mx-auto mt-10" key={contract.contractAddress}>
@@ -189,9 +189,9 @@ const NFTs = observer((props: INFTsProps) => {
       {state.nfts.length > 0 && (
         <div>
           <div className="font-bold text-20 opacity-70 text-center">My NFTs 👇👇👇</div>
-          <div className="flex flex-wrap px-5 justify-center py-4">
+          <div className="flex flex-wrap px-5 justify-center pt-2 pb-4">
             {state.nfts.map(nft => (
-              <img key={nft.tokenId} src={nft.image} alt={`${nft.tokenId}`} className="w-[200px] mx-2 rounded-12" />
+              <img key={nft.tokenId} src={nft.image} alt={`${nft.tokenId}`} className="w-[200px] m-2 rounded-12" />
             ))}
           </div>
         </div>

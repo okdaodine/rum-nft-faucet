@@ -8,4 +8,4 @@ RUN apt-get -y update && apt-get -y install vim
 
 WORKDIR /server
 
-EXPOSE 9000
+EXPOSE 9001

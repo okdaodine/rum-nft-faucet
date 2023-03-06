@@ -5,6 +5,6 @@ export enum TrxStorage {
   chain = 'chain'
 }
 
-export const API_ORIGIN = isProduction ?  window.location.origin : 'http://localhost:9000';
+export const API_ORIGIN = isProduction ?  window.location.origin : 'http://localhost:9001';
 
 export const API_BASE_URL = `${API_ORIGIN}/api`;

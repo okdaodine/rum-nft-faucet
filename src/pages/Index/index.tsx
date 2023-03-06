@@ -78,17 +78,16 @@ export default observer(() => {
                   <div className="opacity-70">
                     <MiddleTruncate string={contract.contractAddress} length={10} />
                   </div>
-                  <BiCopy className="text-14 ml-1 text-orange-400" /></div>
+                  <BiCopy className="text-14 ml-1 text-orange-400" />
+                </div>
                 <div className="flex items-center mt-1 cursor-pointer" onClick={() => {
-                  window.open(window.origin);
+                  window.open(contract.clubUrl);
                 }}>
                   <span className="mr-1 font-bold">Club</span>
                   <div className="opacity-70">
-                    <a href={`https://circle.rumsystem.net/groups/rum.${contract.contractAddress}`} target="_blank" rel="noreferrer">
-                      <MiddleTruncate string={`https://circle.rumsystem.net/groups/rum.${contract.contractAddress}`} length={15} />
-                    </a>
+                    <MiddleTruncate string={contract.clubUrl} length={15} />
                   </div>
-                  <MdOpenInNew className="text-14 ml-1 text-orange-400" />
+                  <MdOpenInNew className="text-14 ml-1 text-orange-400 opacity-90" />
                 </div>
               </div>
             </div>
@@ -192,7 +191,7 @@ const NFTs = observer((props: INFTsProps) => {
           <div className="font-bold text-20 opacity-70 text-center">My NFTs 👇👇👇</div>
           <div className="flex flex-wrap px-5 justify-center py-4">
             {state.nfts.map(nft => (
-              <img src={nft.image} alt={`${nft.tokenId}`} className="w-[200px] mx-2 rounded-12" />
+              <img key={nft.tokenId} src={nft.image} alt={`${nft.tokenId}`} className="w-[200px] mx-2 rounded-12" />
             ))}
           </div>
         </div>

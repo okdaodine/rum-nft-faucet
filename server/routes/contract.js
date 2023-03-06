@@ -9,9 +9,11 @@ router.post('/:contractAddress/:userAddress', mint);
 async function get(ctx) {
   const contracts = await Promise.all(config.contractAddresses.map(async contractAddress => {
     const contractName = await Contract.getContractName(contractAddress);
+    const clubUrl = `${config.clubOrigin}/groups/rum.${contractAddress}`;
     return {
       contractAddress,
-      contractName
+      contractName,
+      clubUrl
     }
   }));
   ctx.body = contracts;

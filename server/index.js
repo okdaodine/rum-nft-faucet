@@ -2,6 +2,7 @@ const Koa = require('koa');
 const http = require('http');
 const convert = require('koa-convert');
 const json = require('koa-json');
+const logger = require('koa-logger');
 const bodyparser = require('koa-bodyparser')();
 const cors = require('@koa/cors');
 const router = require('koa-router')();
@@ -16,10 +17,11 @@ const {
 } = require('./middleware/api');
 
 const app = new Koa();
-const port = 9000;
+const port = 9001;
  
 app.use(convert(bodyparser));
 app.use(convert(json()));
+app.use(convert(logger()));
 app.use(cors({
   credentials: true
 }));

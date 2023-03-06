@@ -84,6 +84,7 @@ const mint = async (ownerPrivateKey, contractAddress, to) => {
   const ownerWallet = new ethers.Wallet(ownerPrivateKey, provider);
   const contractWithSigner = new ethers.Contract(contractAddress, ERC721_ABI, ownerWallet);
   const tx = await contractWithSigner.mint(to);
+  console.log(`[wait for tx]:`, { tx });
   await tx.wait();
 }
 

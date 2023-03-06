@@ -1,6 +1,7 @@
 export interface IContract {
   contractAddress: string
   contractName: string
+  clubUrl: string
 }
 
 export interface INFT {
